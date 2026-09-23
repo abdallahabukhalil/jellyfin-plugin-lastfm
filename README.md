@@ -19,7 +19,7 @@ Older Jellyfin versions may still work with an earlier compatible plugin release
 Install the plugin via the Jellyfin plugin repository. Navigate to the **Plugins** section of the admin dashboard and add the following repository to receive stable builds of this plugin:
 
 - **Repo name:** Last.fm Stable  
-- **Repo URL:** https://raw.githubusercontent.com/danielfariati/jellyfin-plugin-lastfm/refs/heads/master/manifest.json
+- **Repo URL:** https://raw.githubusercontent.com/abdallahabukhalil/jellyfin-plugin-lastfm/refs/heads/master/manifest.json
 
 Restart the Jellyfin server after installation.
 
@@ -100,7 +100,7 @@ While some setups may continue working without a clean install, performing these
 
 ### Reporting an issue
 
-**Please update to the [latest release](https://github.com/danielfariati/jellyfin-plugin-lastfm/releases/latest) and confirm the problem still happens there before opening an issue.** It may already be fixed, and older versions logged far less information, which makes them much harder to debug.
+**Please update to the [latest release](https://github.com/abdallahabukhalil/jellyfin-plugin-lastfm/releases/latest) and confirm the problem still happens there before opening an issue.** It may already be fixed, and older versions logged far less information, which makes them much harder to debug.
 
 The plugin logs what it is doing, which usually explains a missing scrobble on its own. When opening an issue, please include these lines from the Jellyfin server log:
 

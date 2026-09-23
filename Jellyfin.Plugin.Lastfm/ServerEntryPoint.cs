@@ -1,6 +1,8 @@
 ﻿namespace Jellyfin.Plugin.Lastfm
 {
     using Api;
+    using Models;
+    using Scrobbling;
     using MediaBrowser.Controller.Entities;
     using MediaBrowser.Controller.Entities.Audio;
     using MediaBrowser.Controller.Library;
@@ -36,6 +38,7 @@
         private readonly ISessionManager _sessionManager;
         private readonly IUserDataManager _userDataManager;
         private readonly MemoryCache _playbackStartTimes = new(new MemoryCacheOptions());
+        private readonly ScrobbleTracker _scrobbledPlaybackKeys = new();
 
         private LastfmApiClient _apiClient;
         private readonly ILogger<ServerEntryPoint> _logger;
@@ -118,6 +121,11 @@
                     _logger.LogDebug("{0} does not use AlternativeMode", lastfmUser.Username);
                     return;
                 }
+                if (GetScrobblingMode(lastfmUser.Options) == ScrobblingMode.CustomThreshold)
+                {
+                    _logger.LogDebug("{0} uses CustomThreshold; UserDataSaved does not trigger scrobbling", lastfmUser.Username);
+                    return;
+                }
                 if (string.IsNullOrWhiteSpace(item.Artists.FirstOrDefault()) || string.IsNullOrWhiteSpace(item.Name))
                 {
                     _logger.LogInformation("track {0} is missing  artist ({1}) or track name ({2}) metadata. Not submitting", item.Path, item.Artists.FirstOrDefault(), item.Name);
@@ -145,6 +153,14 @@
 
             // Logged before any other check, same as the UserDataSaved handler, so that "the event never arrived" can be told apart from "it arrived but was discarded".
             _logger.LogInformation("PlaybackStopped: track={Track}, positionTicks={PositionTicks}, runtimeTicks={RuntimeTicks}", item.Name, e.PlaybackPositionTicks, item.RunTimeTicks);
+
+            var stoppedUser = e.Users.FirstOrDefault();
+            var stoppedLastfmUser = stoppedUser == null ? null : Utils.UserHelpers.GetUser(stoppedUser);
+            if (stoppedLastfmUser != null && GetScrobblingMode(stoppedLastfmUser.Options) == ScrobblingMode.CustomThreshold)
+            {
+                await ScrobbleCustomThreshold(e, e.PlayedToCompletion).ConfigureAwait(false);
+                return;
+            }
 
             if (e.PlaybackPositionTicks == null)
             {
@@ -214,6 +230,14 @@
             await _apiClient.Scrobble(item, lastfmUser, startedAt).ConfigureAwait(false);
         }
 
+        private async void PlaybackProgress(object sender, PlaybackProgressEventArgs e)
+        {
+            if (e.Item is not Audio || e.Item is AudioBook)
+                return;
+
+            await ScrobbleCustomThreshold(e, false).ConfigureAwait(false);
+        }
+
         /// <summary>
         /// Let Last.fm know when a user has started listening to a track
         /// </summary>
@@ -231,13 +255,22 @@
 
             // Record start time before any opt-out checks so it's available even if
             // config changes between PlaybackStart and the eventual scrobble.
-            _playbackStartTimes.Set(BuildPlaybackStartKey(user.Id, e.Item.Id), DateTime.UtcNow, PlaybackStartTimeTtl);
+            var startTime = DateTime.UtcNow;
+            _playbackStartTimes.Set(BuildPlaybackStartKey(user.Id, e.Item.Id), startTime, PlaybackStartTimeTtl);
+            var playbackKey = BuildPlaybackKey(user.Id, e);
+            _playbackStartTimes.Set(playbackKey, startTime, PlaybackStartTimeTtl);
+            _scrobbledPlaybackKeys.Remove(playbackKey);
 
             var lastfmUser = Utils.UserHelpers.GetUser(user);
             if (lastfmUser == null)
             {
                 _logger.LogDebug("Could not find last.fm user");
                 return;
+            }
+
+            if (GetScrobblingMode(lastfmUser.Options) == ScrobblingMode.CustomThreshold && lastfmUser.Options.Scrobble)
+            {
+                _scrobbledPlaybackKeys.Begin(playbackKey);
             }
 
             // User doesn't want to scrobble
@@ -272,6 +305,7 @@
 
             //Bind events
             _sessionManager.PlaybackStart += PlaybackStart;
+            _sessionManager.PlaybackProgress += PlaybackProgress;
             _sessionManager.PlaybackStopped += PlaybackStopped;
             _userDataManager.UserDataSaved += UserDataSaved;
             return Task.CompletedTask;
@@ -284,12 +318,14 @@
         {
             // Unbind events
             _sessionManager.PlaybackStart -= PlaybackStart;
+            _sessionManager.PlaybackProgress -= PlaybackProgress;
             _sessionManager.PlaybackStopped -= PlaybackStopped;
             _userDataManager.UserDataSaved -= UserDataSaved;
 
             // Clean up
             _apiClient = null;
             _playbackStartTimes.Dispose();
+            _scrobbledPlaybackKeys.Clear();
             return Task.CompletedTask;
         }
 
@@ -303,16 +339,75 @@
             return $"{userId:N}:{itemId:N}";
         }
 
+        private static string BuildPlaybackKey(Guid userId, PlaybackProgressEventArgs e)
+        {
+            var sessionKey = e.PlaySessionId;
+            if (string.IsNullOrWhiteSpace(sessionKey))
+            {
+                sessionKey = e.Session?.Id;
+            }
+
+            return $"{userId:N}:{sessionKey}:{e.Item.Id:N}";
+        }
+
         private DateTime ConsumePlaybackStartTime(Guid userId, Guid itemId, DateTime fallback)
         {
             var key = BuildPlaybackStartKey(userId, itemId);
+            return ConsumePlaybackStartTime(key, fallback);
+        }
+
+        private DateTime ConsumePlaybackStartTime(string key, DateTime fallback)
+        {
             if (_playbackStartTimes.TryGetValue(key, out DateTime startedAt))
             {
                 _playbackStartTimes.Remove(key);
                 return startedAt;
             }
-            _logger.LogDebug("No playback start time cached for user={0} item={1}; falling back to {2:o}", userId, itemId, fallback);
+            _logger.LogDebug("No playback start time cached for key={0}; falling back to {1:o}", key, fallback);
             return fallback;
+        }
+
+        private static ScrobblingMode GetScrobblingMode(LastFmUserOptions options)
+        {
+            if (options.ScrobblingMode == ScrobblingMode.CustomThreshold || options.ScrobblingMode == ScrobblingMode.UserDataSaved)
+            {
+                return options.ScrobblingMode;
+            }
+
+            return options.AlternativeMode ? ScrobblingMode.UserDataSaved : ScrobblingMode.PlaybackStopped;
+        }
+
+        private async Task ScrobbleCustomThreshold(PlaybackProgressEventArgs e, bool completed)
+        {
+            var user = e.Users.FirstOrDefault();
+            if (user == null || e.Item is not Audio item)
+                return;
+
+            var lastfmUser = Utils.UserHelpers.GetUser(user);
+            if (lastfmUser == null || GetScrobblingMode(lastfmUser.Options) != ScrobblingMode.CustomThreshold || !lastfmUser.Options.Scrobble)
+                return;
+
+            var key = BuildPlaybackKey(user.Id, e);
+            if (!_scrobbledPlaybackKeys.IsStarted(key))
+                return;
+
+            var thresholdReached = completed || (e.PlaybackPositionTicks.HasValue && CustomThreshold.IsReached(
+                item.RunTimeTicks ?? 0,
+                e.PlaybackPositionTicks.Value,
+                lastfmUser.Options.MinimumPercentage,
+                lastfmUser.Options.MinimumTimeMinutes));
+            if (!thresholdReached || !_scrobbledPlaybackKeys.TryMarkScrobbled(key))
+                return;
+
+            if (string.IsNullOrWhiteSpace(lastfmUser.SessionKey))
+                return;
+
+            if (string.IsNullOrWhiteSpace(item.Artists.FirstOrDefault()) || string.IsNullOrWhiteSpace(item.Name))
+                return;
+
+            var fallbackStart = DateTime.UtcNow - TimeSpan.FromTicks(e.PlaybackPositionTicks ?? 0);
+            var startedAt = ConsumePlaybackStartTime(key, fallbackStart);
+            await _apiClient.Scrobble(item, lastfmUser, startedAt).ConfigureAwait(false);
         }
     }
 }

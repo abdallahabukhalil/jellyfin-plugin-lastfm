@@ -4,7 +4,7 @@
         "name": "Last.fm",
         "description": "Scrobble Last.fm plays with Jellyfin",
         "overview": "A plugin that scrobbles your Jellyfin music to Last.fm",
-        "owner": "danielfariati",
+        "owner": "abdallahabukhalil",
         "category": "music",
         "imageUrl": "https://www.last.fm/static/images/lastfm_logo_facebook.png",
         "versions": [

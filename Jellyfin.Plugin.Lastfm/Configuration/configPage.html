@@ -33,11 +33,20 @@
                             <span>Sync favourites for this user?</span>
                         </label>
                     </div>
-                    <div class="checkboxContainer">
-                        <label>
-                            <input is="emby-checkbox" type="checkbox" id="lastfmOptionAltMode" name="lastfmOptionAltMode" />
-                            <span>Use alternative mode and scrobble on UserDataSaved events instead of PlaybackStopped?</span>
-                        </label>
+                    <div class="selectContainer">
+                        <select is="emby-select" id="lastfmScrobblingMode" name="lastfmScrobblingMode" label="Scrobbling mode:">
+                            <option value="0">PlaybackStopped</option>
+                            <option value="1">UserDataSaved / Alternative</option>
+                            <option value="2">Custom Threshold</option>
+                        </select>
+                    </div>
+                    <div id="lastfmCustomThresholdOptions">
+                        <div class="inputContainer">
+                            <input is="emby-input" id="lastfmMinimumPercentage" name="lastfmMinimumPercentage" type="number" min="0" max="100" step="1" label="Minimum percentage:" />
+                        </div>
+                        <div class="inputContainer">
+                            <input is="emby-input" id="lastfmMinimumTimeMinutes" name="lastfmMinimumTimeMinutes" type="number" min="1" step="1" label="Minimum time (minutes):" />
+                        </div>
                     </div>
                     <details>
                         <summary>Advanced options</summary>
@@ -74,7 +83,10 @@
                     Options: {
                         Scrobble: false,
                         SyncFavourites: false,
-                        AlternativeMode: false
+                        AlternativeMode: false,
+                        ScrobblingMode: 0,
+                        MinimumPercentage: 50,
+                        MinimumTimeMinutes: 2
                     }
                 },
 
@@ -87,6 +99,7 @@
 
                     this.$el.find('#LastfmScrobblerConfigurationForm').on('submit', this, this.onSubmit);
                     this.$el.find('#lastfmUser').on('change', this, $.proxy(this.onUserChange, this));
+                    this.$el.find('#lastfmScrobblingMode').on('change', $.proxy(this.updateThresholdVisibility, this));
 
                     var loadConfig = this.loadConfiguration();
                     var loadUsers = this.loadUsers().then($.proxy(this.buildUserList, this));
@@ -133,7 +146,12 @@
                     this.$el.find('#lastfmPassword').val(data.SessionKey);
                     this.$el.find('#lastfmOptionScrobble').prop('checked', data.Options.Scrobble);
                     this.$el.find('#lastfmOptionFavourite').prop('checked', data.Options.SyncFavourites);
-                    this.$el.find('#lastfmOptionAltMode').prop('checked', data.Options.AlternativeMode);
+                    var mode = data.Options.ScrobblingMode;
+                    if (data.Options.AlternativeMode && mode === 0) mode = 1;
+                    this.$el.find('#lastfmScrobblingMode').val(String(mode));
+                    this.$el.find('#lastfmMinimumPercentage').val(data.Options.MinimumPercentage == null ? 50 : data.Options.MinimumPercentage);
+                    this.$el.find('#lastfmMinimumTimeMinutes').val(data.Options.MinimumTimeMinutes == null ? 2 : data.Options.MinimumTimeMinutes);
+                    this.updateThresholdVisibility();
                 },
 
                 save: function (username, password) {
@@ -228,8 +246,22 @@
 
                     options.Scrobble = this.$el.find('#lastfmOptionScrobble').prop('checked');
                     options.SyncFavourites = this.$el.find('#lastfmOptionFavourite').prop('checked');
-                    options.AlternativeMode = this.$el.find('#lastfmOptionAltMode').prop('checked');
+                    options.ScrobblingMode = parseInt(this.$el.find('#lastfmScrobblingMode').val(), 10);
+                    options.AlternativeMode = options.ScrobblingMode === 1;
+                    options.MinimumPercentage = parseInt(this.$el.find('#lastfmMinimumPercentage').val(), 10);
+                    options.MinimumTimeMinutes = parseInt(this.$el.find('#lastfmMinimumTimeMinutes').val(), 10);
+                    if (isNaN(options.MinimumPercentage) || options.MinimumPercentage < 0 || options.MinimumPercentage > 100) {
+                        options.MinimumPercentage = 50;
+                    }
+                    if (isNaN(options.MinimumTimeMinutes) || options.MinimumTimeMinutes <= 0) {
+                        options.MinimumTimeMinutes = 2;
+                    }
                     return options;
+                },
+
+                updateThresholdVisibility: function () {
+                    var visible = String(this.$el.find('#lastfmScrobblingMode').val()) === '2';
+                    this.$el.find('#lastfmCustomThresholdOptions').toggle(visible);
                 },
 
                 onUserChange: function () {
