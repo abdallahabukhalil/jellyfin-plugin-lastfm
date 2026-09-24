@@ -9,6 +9,14 @@
         "imageUrl": "https://www.last.fm/static/images/lastfm_logo_facebook.png",
         "versions": [
             {
+                "version": "10.11.0.14",
+                "changelog": "Add Custom Threshold scrobbling mode based on PlaybackProgress.",
+                "targetAbi": "10.11.9.0",
+                "sourceUrl": "https://github.com/abdallahabukhalil/jellyfin-plugin-lastfm/releases/download/10.11.0.14/lastfm_10.11.0.14.zip",
+                "checksum": "ab3737b8c9d3e298a0e4f2172d47eeee",
+                "timestamp": "2026-09-24T00:58:18Z"
+            },
+            {
                 "version": "10.11.0.13",
                 "changelog": "Add Custom Threshold scrobbling mode based on PlaybackProgress.",
                 "targetAbi": "10.11.9.0",
