@@ -50,6 +50,29 @@
             return ToTimestamp(DateTime.UtcNow);
         }
 
+        public static string NormalizeAlbumForLastfm(string album)
+        {
+            if (album == null)
+            {
+                return null;
+            }
+
+            const string epSuffix = " - EP";
+            const string singleSuffix = " - Single";
+
+            if (album.EndsWith(epSuffix, StringComparison.Ordinal))
+            {
+                return album.Substring(0, album.Length - epSuffix.Length);
+            }
+
+            if (album.EndsWith(singleSuffix, StringComparison.Ordinal))
+            {
+                return album.Substring(0, album.Length - singleSuffix.Length);
+            }
+
+            return album;
+        }
+
         public static string DictionaryToQueryString(Dictionary<string, string> data)
         {
             return String.Join("&", data.Where(k => !String.IsNullOrWhiteSpace(k.Value)).Select(kvp => String.Format("{0}={1}", Uri.EscapeDataString(kvp.Key), Uri.EscapeDataString(kvp.Value))));

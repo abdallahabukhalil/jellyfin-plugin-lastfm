@@ -115,9 +115,10 @@
                 Secure = true
             };
 
-            if (!string.IsNullOrWhiteSpace(item.Album))
+            var normalizedAlbum = Helpers.NormalizeAlbumForLastfm(item.Album);
+            if (!string.IsNullOrWhiteSpace(normalizedAlbum))
             {
-                request.Album = item.Album;
+                request.Album = normalizedAlbum;
             }
             if (item.ProviderIds.ContainsKey("MusicBrainzTrack"))
             {
@@ -186,9 +187,10 @@
                 Secure = true
             };
 
-            if (!string.IsNullOrWhiteSpace(item.Album))
+            var normalizedAlbum = Helpers.NormalizeAlbumForLastfm(item.Album);
+            if (!string.IsNullOrWhiteSpace(normalizedAlbum))
             {
-                request.Album = item.Album;
+                request.Album = normalizedAlbum;
             }
             if (item.ProviderIds.ContainsKey("MusicBrainzTrack"))
             {
