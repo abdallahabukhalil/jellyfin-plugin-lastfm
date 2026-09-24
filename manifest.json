@@ -9,6 +9,14 @@
         "imageUrl": "https://www.last.fm/static/images/lastfm_logo_facebook.png",
         "versions": [
             {
+                "version": "10.11.0.16",
+                "changelog": "Add Custom Threshold scrobbling mode and normalize EP/Single album suffixes in Last.fm requests.",
+                "targetAbi": "10.11.9.0",
+                "sourceUrl": "https://github.com/abdallahabukhalil/jellyfin-plugin-lastfm/releases/download/10.11.0.16/lastfm_10.11.0.16.zip",
+                "checksum": "e2e8ee6ad9826a4c75a7a52cf7e168b6",
+                "timestamp": "2026-09-24T02:04:19Z"
+            },
+            {
                 "version": "10.11.0.15",
                 "changelog": "Add Custom Threshold scrobbling mode based on PlaybackProgress.",
                 "targetAbi": "10.11.9.0",
