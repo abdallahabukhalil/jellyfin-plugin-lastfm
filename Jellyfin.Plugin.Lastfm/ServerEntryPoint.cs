@@ -158,7 +158,7 @@
             var stoppedLastfmUser = stoppedUser == null ? null : Utils.UserHelpers.GetUser(stoppedUser);
             if (stoppedLastfmUser != null && GetScrobblingMode(stoppedLastfmUser.Options) == ScrobblingMode.CustomThreshold)
             {
-                await ScrobbleCustomThreshold(e, e.PlayedToCompletion).ConfigureAwait(false);
+                _logger.LogDebug("{0} uses CustomThreshold; PlaybackStopped does not trigger scrobbling", stoppedLastfmUser.Username);
                 return;
             }
 
@@ -235,7 +235,7 @@
             if (e.Item is not Audio || e.Item is AudioBook)
                 return;
 
-            await ScrobbleCustomThreshold(e, false).ConfigureAwait(false);
+            await ScrobbleCustomThreshold(e).ConfigureAwait(false);
         }
 
         /// <summary>
@@ -377,7 +377,7 @@
             return options.AlternativeMode ? ScrobblingMode.UserDataSaved : ScrobblingMode.PlaybackStopped;
         }
 
-        private async Task ScrobbleCustomThreshold(PlaybackProgressEventArgs e, bool completed)
+        private async Task ScrobbleCustomThreshold(PlaybackProgressEventArgs e)
         {
             var user = e.Users.FirstOrDefault();
             if (user == null || e.Item is not Audio item)
@@ -391,12 +391,12 @@
             if (!_scrobbledPlaybackKeys.IsStarted(key))
                 return;
 
-            var thresholdReached = completed || (e.PlaybackPositionTicks.HasValue && CustomThreshold.IsReached(
+            if (!e.PlaybackPositionTicks.HasValue || !_scrobbledPlaybackKeys.TryScrobbleAtProgress(
+                key,
                 item.RunTimeTicks ?? 0,
                 e.PlaybackPositionTicks.Value,
                 lastfmUser.Options.MinimumPercentage,
-                lastfmUser.Options.MinimumTimeMinutes));
-            if (!thresholdReached || !_scrobbledPlaybackKeys.TryMarkScrobbled(key))
+                lastfmUser.Options.MinimumTimeMinutes))
                 return;
 
             if (string.IsNullOrWhiteSpace(lastfmUser.SessionKey))

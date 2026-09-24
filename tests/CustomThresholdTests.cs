@@ -57,6 +57,76 @@ namespace Jellyfin.Plugin.Lastfm.Tests
         }
 
         [Fact]
+        public void PauseBeforeThresholdDoesNotScrobble()
+        {
+            var tracker = new ScrobbleTracker();
+            const string playbackKey = "session-a:user-a:item-a";
+            tracker.Begin(playbackKey);
+
+            Assert.False(tracker.TryScrobbleAtProgress(
+                playbackKey,
+                TimeSpan.FromMinutes(5).Ticks,
+                TimeSpan.FromSeconds(30).Ticks,
+                50,
+                2));
+            Assert.False(tracker.IsScrobbled(playbackKey));
+        }
+
+        [Fact]
+        public void PlaybackStoppedForCustomThresholdDoesNotScrobble()
+        {
+            var tracker = new ScrobbleTracker();
+            const string playbackKey = "session-a:user-a:item-a";
+            tracker.Begin(playbackKey);
+
+            // PlaybackStopped has no Custom Threshold entry point. Without a
+            // qualifying PlaybackProgress event, the playback remains unscrobbled.
+            Assert.False(tracker.IsScrobbled(playbackKey));
+        }
+
+        [Fact]
+        public void PlaybackProgressAtThresholdScrobblesOnlyOnce()
+        {
+            var tracker = new ScrobbleTracker();
+            const string playbackKey = "session-a:user-a:item-a";
+            tracker.Begin(playbackKey);
+
+            Assert.True(tracker.TryScrobbleAtProgress(
+                playbackKey,
+                TimeSpan.FromMinutes(5).Ticks,
+                TimeSpan.FromMinutes(2).Ticks,
+                50,
+                2));
+            Assert.False(tracker.TryScrobbleAtProgress(
+                playbackKey,
+                TimeSpan.FromMinutes(5).Ticks,
+                TimeSpan.FromMinutes(3).Ticks,
+                50,
+                2));
+        }
+
+        [Fact]
+        public void ResumeContinuesTheSamePlaybackSession()
+        {
+            var tracker = new ScrobbleTracker();
+            const string playbackKey = "session-a:user-a:item-a";
+            tracker.Begin(playbackKey);
+
+            Assert.False(tracker.TryScrobbleAtProgress(
+                playbackKey,
+                TimeSpan.FromMinutes(3).Ticks,
+                TimeSpan.FromSeconds(30).Ticks,
+                50,
+                2));
+            Assert.True(tracker.TryScrobbleAtProgress(
+                playbackKey,
+                TimeSpan.FromMinutes(3).Ticks,
+                TimeSpan.FromSeconds(90).Ticks,
+                50,
+                2));
+        }
+
+        [Fact]
         public void InvalidSettingsAreSafelyNormalized()
         {
             var runtime = TimeSpan.FromMinutes(10).Ticks;

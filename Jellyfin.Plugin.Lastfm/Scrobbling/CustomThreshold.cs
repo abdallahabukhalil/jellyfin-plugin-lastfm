@@ -48,6 +48,18 @@ namespace Jellyfin.Plugin.Lastfm.Scrobbling
             return _scrobbled.TryAdd(playbackKey, 0);
         }
 
+        public bool IsScrobbled(string playbackKey)
+        {
+            return _scrobbled.ContainsKey(playbackKey);
+        }
+
+        public bool TryScrobbleAtProgress(string playbackKey, long runtimeTicks, long positionTicks, int percentage, int timeMinutes)
+        {
+            return IsStarted(playbackKey)
+                && CustomThreshold.IsReached(runtimeTicks, positionTicks, percentage, timeMinutes)
+                && TryMarkScrobbled(playbackKey);
+        }
+
         public void Remove(string playbackKey)
         {
             _scrobbled.TryRemove(playbackKey, out _);
