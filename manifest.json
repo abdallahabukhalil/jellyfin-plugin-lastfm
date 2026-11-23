@@ -9,6 +9,14 @@
         "imageUrl": "https://www.last.fm/static/images/lastfm_logo_facebook.png",
         "versions": [
             {
+                "version": "10.11.0.17",
+                "changelog": "Fix album suffix normalization for EP/Single/Unreleased (now case-insensitive) and add a per-user option to enable or disable it.",
+                "targetAbi": "10.11.9.0",
+                "sourceUrl": "https://github.com/abdallahabukhalil/jellyfin-plugin-lastfm/releases/download/10.11.0.17/lastfm_10.11.0.17.zip",
+                "checksum": "b2e7b018b0d99319a4bfc1022f0b02b0",
+                "timestamp": "2026-11-23T22:53:34Z"
+            },
+            {
                 "version": "10.11.0.16",
                 "changelog": "Add Custom Threshold scrobbling mode and normalize EP/Single album suffixes in Last.fm requests.",
                 "targetAbi": "10.11.9.0",
