@@ -33,6 +33,12 @@
                             <span>Sync favourites for this user?</span>
                         </label>
                     </div>
+                    <div class="checkboxContainer">
+                        <label>
+                            <input is="emby-checkbox" type="checkbox" id="lastfmOptionNormalizeAlbum" name="lastfmOptionNormalizeAlbum" />
+                            <span>Normalize album suffixes (EP / Single / Unreleased)?</span>
+                        </label>
+                    </div>
                     <div class="selectContainer">
                         <select is="emby-select" id="lastfmScrobblingMode" name="lastfmScrobblingMode" label="Scrobbling mode:">
                             <option value="0">PlaybackStopped</option>
@@ -84,6 +90,7 @@
                         Scrobble: false,
                         SyncFavourites: false,
                         AlternativeMode: false,
+                        NormalizeAlbumSuffixes: true,
                         ScrobblingMode: 0,
                         MinimumPercentage: 50,
                         MinimumTimeMinutes: 2
@@ -146,6 +153,7 @@
                     this.$el.find('#lastfmPassword').val(data.SessionKey);
                     this.$el.find('#lastfmOptionScrobble').prop('checked', data.Options.Scrobble);
                     this.$el.find('#lastfmOptionFavourite').prop('checked', data.Options.SyncFavourites);
+                    this.$el.find('#lastfmOptionNormalizeAlbum').prop('checked', data.Options.NormalizeAlbumSuffixes !== false);
                     var mode = data.Options.ScrobblingMode;
                     if (data.Options.AlternativeMode && mode === 0) mode = 1;
                     this.$el.find('#lastfmScrobblingMode').val(String(mode));
@@ -246,6 +254,7 @@
 
                     options.Scrobble = this.$el.find('#lastfmOptionScrobble').prop('checked');
                     options.SyncFavourites = this.$el.find('#lastfmOptionFavourite').prop('checked');
+                    options.NormalizeAlbumSuffixes = this.$el.find('#lastfmOptionNormalizeAlbum').prop('checked');
                     options.ScrobblingMode = parseInt(this.$el.find('#lastfmScrobblingMode').val(), 10);
                     options.AlternativeMode = options.ScrobblingMode === 1;
                     options.MinimumPercentage = parseInt(this.$el.find('#lastfmMinimumPercentage').val(), 10);

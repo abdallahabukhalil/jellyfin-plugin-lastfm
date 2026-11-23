@@ -20,6 +20,7 @@
         public bool SyncFavourites  { get; set; }
         // Retained for compatibility with existing configuration files.
         public bool AlternativeMode { get; set; }
+        public bool NormalizeAlbumSuffixes { get; set; } = true;
         public ScrobblingMode ScrobblingMode { get; set; }
         public int MinimumPercentage { get; set; } = 50;
         public int MinimumTimeMinutes { get; set; } = 2;

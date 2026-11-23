@@ -115,7 +115,7 @@
                 Secure = true
             };
 
-            var normalizedAlbum = Helpers.NormalizeAlbumForLastfm(item.Album);
+            var normalizedAlbum = Helpers.NormalizeAlbumForLastfm(item.Album, user.Options?.NormalizeAlbumSuffixes ?? true);
             if (!string.IsNullOrWhiteSpace(normalizedAlbum))
             {
                 request.Album = normalizedAlbum;
@@ -187,7 +187,7 @@
                 Secure = true
             };
 
-            var normalizedAlbum = Helpers.NormalizeAlbumForLastfm(item.Album);
+            var normalizedAlbum = Helpers.NormalizeAlbumForLastfm(item.Album, user.Options?.NormalizeAlbumSuffixes ?? true);
             if (!string.IsNullOrWhiteSpace(normalizedAlbum))
             {
                 request.Album = normalizedAlbum;

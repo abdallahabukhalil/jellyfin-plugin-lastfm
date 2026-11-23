@@ -50,24 +50,21 @@
             return ToTimestamp(DateTime.UtcNow);
         }
 
-        public static string NormalizeAlbumForLastfm(string album)
+        private static readonly string[] AlbumSuffixes = { " - EP", " - Single", " - Unreleased" };
+
+        public static string NormalizeAlbumForLastfm(string album, bool normalizeSuffixes = true)
         {
-            if (album == null)
+            if (album == null || !normalizeSuffixes)
             {
-                return null;
+                return album;
             }
 
-            const string epSuffix = " - EP";
-            const string singleSuffix = " - Single";
-
-            if (album.EndsWith(epSuffix, StringComparison.Ordinal))
+            foreach (var suffix in AlbumSuffixes)
             {
-                return album.Substring(0, album.Length - epSuffix.Length);
-            }
-
-            if (album.EndsWith(singleSuffix, StringComparison.Ordinal))
-            {
-                return album.Substring(0, album.Length - singleSuffix.Length);
+                if (album.EndsWith(suffix, StringComparison.OrdinalIgnoreCase))
+                {
+                    return album.Substring(0, album.Length - suffix.Length);
+                }
             }
 
             return album;

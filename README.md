@@ -44,6 +44,9 @@ If a user changes their Last.fm password, you may need to reconfigure the plugin
 - **Sync favourites for this user?**  
   Enables two-way synchronization between Jellyfin favourites and Last.fm loved tracks.
 
+- **Normalize album suffixes (EP / Single / Unreleased)?**
+  Strips a trailing ` - EP`, ` - Single`, or ` - Unreleased` suffix (case-insensitive) from the album name sent to Last.fm, so those releases are grouped under the base album. The rest of the album name is left exactly as tagged. Disable it to send the album name unchanged.
+
 - **Use alternative mode and scrobble on `UserDataSaved` events instead of `PlaybackStopped`?**
 
   By default, the plugin scrobbles tracks when Jellyfin emits the `PlaybackStopped` event. This event is reported by the client, and its timing and accuracy depend on the client implementation. Some clients may emit this event with delayed or synthetic timing, or may not emit it consistently (particularly mobile clients), which can lead to missing or inconsistent scrobbles.
